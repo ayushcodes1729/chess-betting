@@ -24,9 +24,17 @@ pub mod capstone_chess_betting {
         player_b: Option<Pubkey>,
         winner: Option<Pubkey>,
         seed: u64,
-        code: String
+        code: String,
     ) -> Result<()> {
-        ctx.accounts.init_match(match_duration, bet_amount, player_b, winner, seed, code.clone(), &ctx.bumps)?;
+        ctx.accounts.init_match(
+            match_duration,
+            bet_amount,
+            player_b,
+            winner,
+            seed,
+            code.clone(),
+            &ctx.bumps,
+        )?;
         ctx.accounts.deposit_bet()?;
 
         Ok(())

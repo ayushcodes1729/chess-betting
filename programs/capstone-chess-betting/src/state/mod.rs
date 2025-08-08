@@ -11,7 +11,8 @@ pub struct MatchState{
     pub created_at: i64, // clock
     pub winner: Option<Pubkey>, // not yet in init
     pub status: Status, // input
-    pub bump: u8 // done
+    pub bump: u8, // done
+    pub vault_bump: u8 //done
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]

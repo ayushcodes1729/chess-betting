@@ -23,7 +23,7 @@ pub struct InitializeMatch<'info> {
     pub match_account: Account<'info, MatchState>,
 
     #[account(
-        mut,
+        mut,        //SystemAccount don't need to be initialized
         seeds = [b"vault", match_account.key().as_ref()],
         bump
     )]
@@ -53,17 +53,25 @@ impl<'info> InitializeMatch<'info> {
             winner,
             status: Waiting,
             bump: bumps.match_account,
+            vault_bump: bumps.vault,
         });
 
         Ok(())
     }
 
     pub fn deposit_bet(&mut self) -> Result<()> {
-        require!(self.match_account.status == Waiting, ErrorCode::InvalidMatchError);
-        
+        require!(
+            self.match_account.status == Waiting,
+            ErrorCode::InvalidMatchError
+        );
+        require!(
+            self.player_a.get_lamports() > self.match_account.bet_amount,
+            ErrorCode::InsufficientBalance
+        );
+
         let transfer_accounts = Transfer {
             from: self.player_a.to_account_info(),
-            to: self.vault.to_account_info()
+            to: self.vault.to_account_info(),
         };
 
         let cpi_ctx = CpiContext::new(self.system_program.to_account_info(), transfer_accounts);
