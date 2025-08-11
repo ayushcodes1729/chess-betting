@@ -24,6 +24,7 @@ pub struct CancelMatch<'info> {
         mut,
         seeds = [b"match", match_account.seed.to_be_bytes().as_ref(), code.as_bytes(), match_account.player_a.key().as_ref()],
         bump = match_account.bump,
+        close = treasury_pda
     )]
     pub match_account: Account<'info, MatchState>,
 
@@ -45,7 +46,7 @@ pub struct CancelMatch<'info> {
 }
 
 impl<'info> CancelMatch<'info> {
-    pub fn cancel_match(&mut self) -> Result<()> {
+    pub fn cancel_match(&mut self, _code: String) -> Result<()> {
         let match_state = self.match_account.status;
 
         match match_state {
@@ -164,6 +165,14 @@ impl<'info> CancelMatch<'info> {
                 ErrorCode::InvalidMatchError;
             }
         }
+
+        let vault_info = self.vault.to_account_info();
+        let treasury_info = self.treasury_pda.to_account_info();
+
+        let lamports_to_transfer = vault_info.lamports();
+        **vault_info.try_borrow_mut_lamports()? -= lamports_to_transfer;
+        **treasury_info.try_borrow_mut_lamports()? += lamports_to_transfer;
+
         Ok(())
     }
 }
