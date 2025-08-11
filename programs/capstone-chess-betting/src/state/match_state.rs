@@ -3,19 +3,19 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(InitSpace)]
 pub struct MatchState{
-    pub seed: u64, //done
-    pub bet_amount: u64, // input
-    pub match_duration: u32, // input
-    pub player_a: Pubkey, // done
-    pub player_b: Option<Pubkey>, //not in init
-    pub created_at: i64, // clock
-    pub winner: Option<Pubkey>, // not yet in init
-    pub status: Status, // input
-    pub bump: u8, // done
-    pub vault_bump: u8 //done
+    pub seed: u64, 
+    pub bet_amount: u64, 
+    pub match_duration: u32, 
+    pub player_a: Pubkey, 
+    pub player_b: Option<Pubkey>, 
+    pub created_at: i64, 
+    pub winner: Option<Pubkey>, 
+    pub status: Status, 
+    pub bump: u8, 
+    pub vault_bump: u8 
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Copy)]
 pub enum Status {
     Waiting,
     InProgress,
