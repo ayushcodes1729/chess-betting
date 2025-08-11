@@ -7,6 +7,9 @@ pub enum ErrorCode {
 
     #[msg("Insufficient balance in player's account")]
     InsufficientBalance,
+
+    #[msg("Invalid balance in vault pda")]
+    InvalidVaultBalanceError,
     
     #[msg("This player is not expected here")]
     InvalidPlayerError,

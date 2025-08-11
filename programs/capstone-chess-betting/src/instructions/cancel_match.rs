@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_lang::system_program::transfer;
+use anchor_lang::system_program::Transfer;
 
 use crate::MatchState;
 use crate::Status;
@@ -11,6 +13,12 @@ use crate::error::ErrorCode;
 pub struct CancelMatch<'info> {
     #[account(mut)]
     pub player: Signer<'info>,
+
+    #[account(mut)]
+    pub player_a: SystemAccount<'info>,
+
+    #[account(mut)]
+    pub player_b: SystemAccount<'info>,
 
     #[account(
         mut,
@@ -36,16 +44,121 @@ pub struct CancelMatch<'info> {
     pub system_program: Program<'info, System>, // we need it anyways for the cpi(since we are transferring native sols)
 }
 
-impl <'info> CancelMatch<'info> {
+impl<'info> CancelMatch<'info> {
     pub fn cancel_match(&mut self) -> Result<()> {
         let match_state = self.match_account.status;
 
         match match_state {
             Status::Waiting => {
-                require_eq!(self.player.key().to_string(), self.match_account.player_a.key().to_string(), ErrorCode::InvalidPlayerError);
+                require_eq!(
+                    self.player.key().to_string(),
+                    self.match_account.player_a.key().to_string(),
+                    ErrorCode::InvalidPlayerError
+                );
+                require_eq!(
+                    self.vault.lamports(),
+                    self.match_account.bet_amount,
+                    ErrorCode::InvalidVaultBalanceError
+                );
+
+                let transfer_accounts = Transfer {
+                    from: self.vault.to_account_info(),
+                    to: self.player.to_account_info(),
+                };
+
+                let signer_seeds: &[&[&[u8]]; 1] = &[&[
+                    b"vault",
+                    self.match_account.to_account_info().key.as_ref(), //temporary value dropped while borrowed, that's why removed () after key
+                    &[self.match_account.vault_bump],
+                ]];
+
+                let cpi_ctx = CpiContext::new_with_signer(
+                    self.system_program.to_account_info(),
+                    transfer_accounts,
+                    signer_seeds,
+                );
+
+                transfer(cpi_ctx, self.vault.lamports())?;
             }
             Status::InProgress => {
+                let req_balance = self.match_account.bet_amount.checked_mul(2);
+                require_eq!(
+                    self.vault.lamports().to_string(),
+                    req_balance.unwrap().to_string(),
+                    ErrorCode::InvalidVaultBalanceError
+                );
+                let player_a = self.match_account.player_a.key();
+                let player_b = self.match_account.player_b.unwrap().key();
+                match self.player.key() {
+                    player_a => {
+                        let transfer_accounts_1 = Transfer {
+                            from: self.vault.to_account_info(),
+                            to: self.player.to_account_info(),
+                        };
+                        let transfer_accounts_2 = Transfer {
+                            from: self.vault.to_account_info(),
+                            to: self.player_b.to_account_info(),
+                        };
 
+                        let signer_seeds: &[&[&[u8]]; 1] = &[&[
+                            b"vault",
+                            self.match_account.to_account_info().key.as_ref(), //temporary value dropped while borrowed, that's why removed () after key
+                            &[self.match_account.vault_bump],
+                        ]];
+
+                        let cpi_ctx_1 = CpiContext::new_with_signer(
+                            self.system_program.to_account_info(),
+                            transfer_accounts_1,
+                            signer_seeds,
+                        );
+
+                        let cpi_ctx_2 = CpiContext::new_with_signer(
+                            self.system_program.to_account_info(),
+                            transfer_accounts_2,
+                            signer_seeds,
+                        );
+
+                        let original_amount = self.match_account.bet_amount;
+                        let final_amount_to_player = original_amount.checked_sub(original_amount.checked_div(100).unwrap());
+
+                        transfer(cpi_ctx_2, original_amount)?;
+                        transfer(cpi_ctx_1, final_amount_to_player.unwrap())?;
+                    }
+                    player_b => {
+                        let transfer_accounts_1 = Transfer {
+                            from: self.vault.to_account_info(),
+                            to: self.player.to_account_info(),
+                        };
+                        let transfer_accounts_2 = Transfer {
+                            from: self.vault.to_account_info(),
+                            to: self.player_a.to_account_info(),
+                        };
+
+                        let signer_seeds: &[&[&[u8]]; 1] = &[&[
+                            b"vault",
+                            self.match_account.to_account_info().key.as_ref(), //temporary value dropped while borrowed, that's why removed () after key
+                            &[self.match_account.vault_bump],
+                        ]];
+
+                        let cpi_ctx_1 = CpiContext::new_with_signer(
+                            self.system_program.to_account_info(),
+                            transfer_accounts_1,
+                            signer_seeds,
+                        );
+
+                        let cpi_ctx_2 = CpiContext::new_with_signer(
+                            self.system_program.to_account_info(),
+                            transfer_accounts_2,
+                            signer_seeds,
+                        );
+
+                        let original_amount = self.match_account.bet_amount;
+                        let final_amount_to_player = original_amount.checked_sub(original_amount.checked_div(100).unwrap());
+
+                        transfer(cpi_ctx_2, original_amount)?;
+                        transfer(cpi_ctx_1, final_amount_to_player.unwrap())?;
+                    }
+                }
             }
             Status::Completed | Status::Draw => {
                 ErrorCode::InvalidMatchError;
