@@ -88,10 +88,11 @@ impl<'info> CancelMatch<'info> {
                     req_balance.unwrap().to_string(),
                     ErrorCode::InvalidVaultBalanceError
                 );
+                let actor = self.player.key();
                 let player_a = self.match_account.player_a.key();
                 let player_b = self.match_account.player_b.unwrap().key();
-                match self.player.key() {
-                    player_a => {
+                match (actor == player_a, actor == player_b) {
+                    (true, false) => {
                         let transfer_accounts_1 = Transfer {
                             from: self.vault.to_account_info(),
                             to: self.player.to_account_info(),
@@ -125,7 +126,7 @@ impl<'info> CancelMatch<'info> {
                         transfer(cpi_ctx_2, original_amount)?;
                         transfer(cpi_ctx_1, final_amount_to_player.unwrap())?;
                     }
-                    player_b => {
+                    (false, true) => {
                         let transfer_accounts_1 = Transfer {
                             from: self.vault.to_account_info(),
                             to: self.player.to_account_info(),
@@ -159,10 +160,13 @@ impl<'info> CancelMatch<'info> {
                         transfer(cpi_ctx_2, original_amount)?;
                         transfer(cpi_ctx_1, final_amount_to_player.unwrap())?;
                     }
+                    (false, false) | (true, true) => {
+                        return err!(ErrorCode::InvalidPlayerError);
+                    }
                 }
             }
             Status::Completed | Status::Draw => {
-                ErrorCode::InvalidMatchError;
+                return err!(ErrorCode::InvalidMatchError);
             }
         }
 
