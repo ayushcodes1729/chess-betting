@@ -11,9 +11,15 @@ pub enum ErrorCode {
     #[msg("Invalid balance in vault pda")]
     InvalidVaultBalanceError,
     
+    #[msg("Invalid bet amount")]
+    InvalidBetAmount,
+    
     #[msg("This player is not expected here")]
     InvalidPlayerError,
     
     #[msg("Player A and B can't be same")]
-    SamePlayerError
+    SamePlayerError,
+
+    #[msg("Winner keys are invalid, maybe players are also invalid")]
+    InvalidWinnerError,
 }

@@ -3,8 +3,8 @@ use anchor_lang::system_program::transfer;
 use anchor_lang::system_program::Transfer;
 
 use crate::MatchState;
+use crate::MatchConfig;
 use crate::Status;
-use crate::Status::*;
 
 use crate::error::ErrorCode;
 
@@ -36,9 +36,16 @@ pub struct CancelMatch<'info> {
     pub vault: SystemAccount<'info>,
 
     #[account(
+        mut,
+        seeds = [b"config"],
+        bump = config.config_bump
+    )]
+    pub config: Account<'info, MatchConfig>,
+
+    #[account(
         mut,        //SystemAccount don't need to be initialized
         seeds = [b"treasury"],
-        bump
+        bump = config.treasury_bump
     )]
     pub treasury_pda: SystemAccount<'info>,
 
