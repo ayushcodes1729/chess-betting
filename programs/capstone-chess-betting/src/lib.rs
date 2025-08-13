@@ -32,11 +32,38 @@ pub mod capstone_chess_betting {
             player_b,
             winner,
             seed,
-            code.clone(),
+            code,
             &ctx.bumps,
         )?;
         ctx.accounts.deposit_bet()?;
 
+        Ok(())
+    }
+
+    pub fn init_config(
+        ctx: Context<InitConfig>,
+    ) -> Result<()> {
+        ctx.accounts.init_config(&ctx.bumps)?;
+        Ok(())
+    }
+
+    pub fn accept_match(ctx: Context<AcceptMatch>, code: String) -> Result<()>{
+        ctx.accounts.accept_match(code)?;
+        Ok(())
+    }
+
+    pub fn cancel_match(ctx: Context<CancelMatch>, code: String) -> Result<()>{
+        ctx.accounts.cancel_match(code)?;
+        Ok(())
+    }
+
+    pub fn final_payouts(ctx: Context<FinalPayments>, code: String, winner_key: Option<Pubkey>) -> Result<()> {
+        ctx.accounts.final_payouts(code, winner_key)?;
+        Ok(())
+    }
+
+    pub fn withdraw_from_treasury(ctx: Context<WithdrawTreasury>) -> Result<()>{
+        ctx.accounts.withdraw_from_treasury()?;
         Ok(())
     }
 }
