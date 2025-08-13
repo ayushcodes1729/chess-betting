@@ -22,4 +22,7 @@ pub enum ErrorCode {
 
     #[msg("Winner keys are invalid, maybe players are also invalid")]
     InvalidWinnerError,
+
+    #[msg("Admin authority is not present or is not correct")]
+    InvalidAdminError,
 }
