@@ -35,12 +35,12 @@ pub struct InitializeMatch<'info> {
 impl<'info> InitializeMatch<'info> {
     pub fn init_match(
         &mut self,
+        seed: u64,
+        _code: String,
         match_duration: u32,
         bet_amount: u64,
         player_b: Option<Pubkey>,
         winner: Option<Pubkey>,
-        seed: u64,
-        _code: String,
         bumps: &InitializeMatchBumps,
     ) -> Result<()> {
         self.match_account.set_inner(MatchState {

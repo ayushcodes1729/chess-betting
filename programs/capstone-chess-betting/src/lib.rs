@@ -19,20 +19,20 @@ pub mod capstone_chess_betting {
 
     pub fn initialize_match(
         ctx: Context<InitializeMatch>,
+        seed: u64,
+        code: String,
         match_duration: u32,
         bet_amount: u64,
         player_b: Option<Pubkey>,
         winner: Option<Pubkey>,
-        seed: u64,
-        code: String,
     ) -> Result<()> {
         ctx.accounts.init_match(
+            seed,
+            code,
             match_duration,
             bet_amount,
             player_b,
             winner,
-            seed,
-            code,
             &ctx.bumps,
         )?;
         ctx.accounts.deposit_bet()?;
