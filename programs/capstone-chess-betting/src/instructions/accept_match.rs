@@ -13,9 +13,12 @@ pub struct AcceptMatch<'info> {
     #[account(mut)]
     pub player_b: Signer<'info>,
 
+    #[account(mut)]
+    pub player_a: SystemAccount<'info>,
+
     #[account(
         mut,
-        seeds = [b"match", match_account.seed.to_be_bytes().as_ref(), code.as_bytes(), match_account.player_a.key().as_ref()],
+        seeds = [b"match", match_account.seed.to_le_bytes().as_ref(), code.as_bytes(), player_a.key().as_ref()],
         bump = match_account.bump,
     )]
     pub match_account: Account<'info, MatchState>,
