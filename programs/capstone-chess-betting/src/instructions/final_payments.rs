@@ -6,6 +6,7 @@ use anchor_lang::system_program::Transfer;
 use crate::MatchConfig;
 use crate::MatchState;
 use crate::Status;
+use crate::Status::*;
 
 use crate::error::ErrorCode;
 
@@ -23,7 +24,7 @@ pub struct FinalPayments<'info> {
 
     #[account(
         mut,
-        seeds = [b"match", match_account.seed.to_be_bytes().as_ref(), code.as_bytes(), match_account.player_a.key().as_ref()],
+        seeds = [b"match", match_account.seed.to_le_bytes().as_ref(), code.as_bytes(), match_account.player_a.key().as_ref()],
         bump = match_account.bump,
         close = treasury_pda
     )]
@@ -55,6 +56,12 @@ pub struct FinalPayments<'info> {
 
 impl<'info> FinalPayments<'info> {
     pub fn final_payouts(&mut self, _code: String, winner_key: Option<Pubkey>) -> Result<()> {
+        if winner_key != None {
+            self.match_account.status = Completed;
+        } else {
+            self.match_account.status = Draw;
+        }
+
         let match_state = self.match_account.status;
 
         match match_state {
@@ -73,19 +80,20 @@ impl<'info> FinalPayments<'info> {
                 self.match_account.winner = Some(winner_key.unwrap().key());
 
                 let bet = self.match_account.bet_amount;
+                let total_bet_amount = bet.checked_mul(2).unwrap();
                 let winning_amount: u64;
 
                 if bet <= LAMPORTS_PER_SOL {
-                    winning_amount = bet
-                        .checked_sub(bet.checked_mul(100).unwrap().checked_div(10_000).unwrap())
+                    winning_amount = total_bet_amount
+                        .checked_sub(total_bet_amount.checked_mul(50).unwrap().checked_div(10_000).unwrap())
                         .unwrap(); // 0.5% of 2* bet_ammount
                 } else if LAMPORTS_PER_SOL < bet && bet <= LAMPORTS_PER_SOL * 5 {
-                    winning_amount = bet
-                        .checked_sub(bet.checked_mul(200).unwrap().checked_div(10_000).unwrap())
+                    winning_amount = total_bet_amount
+                        .checked_sub(total_bet_amount.checked_mul(100).unwrap().checked_div(10_000).unwrap())
                         .unwrap(); // 1% of 2* bet_ammount
                 } else if bet > LAMPORTS_PER_SOL * 5 {
-                    winning_amount = bet
-                        .checked_sub(bet.checked_mul(300).unwrap().checked_div(10_000).unwrap())
+                    winning_amount = total_bet_amount
+                        .checked_sub(total_bet_amount.checked_mul(150).unwrap().checked_div(10_000).unwrap())
                         .unwrap(); // 1.5% of 2* bet_ammount
                 } else {
                     return err!(ErrorCode::InvalidBetAmount);
@@ -186,13 +194,30 @@ impl<'info> FinalPayments<'info> {
                 return err!(ErrorCode::InvalidMatchError);
             }
         }
-        
-        let vault_info = self.vault.to_account_info();
-        let treasury_info = self.treasury_pda.to_account_info();
 
-        let lamports_to_transfer = vault_info.lamports();
-        **vault_info.try_borrow_mut_lamports()? -= lamports_to_transfer;
-        **treasury_info.try_borrow_mut_lamports()? += lamports_to_transfer;
+        // Sweep any leftover lamports from the vault to the treasury via CPI
+        let leftover = self.vault.lamports();
+        if leftover > 0 {
+            let transfer_accounts = Transfer {
+                from: self.vault.to_account_info(),
+                to: self.treasury_pda.to_account_info(),
+            };
+
+            let signer_seeds: &[&[&[u8]]; 1] = &[&[
+                b"vault",
+                self.match_account.to_account_info().key.as_ref(),
+                &[self.match_account.vault_bump],
+            ]];
+
+            let cpi_ctx = CpiContext::new_with_signer(
+                self.system_program.to_account_info(),
+                transfer_accounts,
+                signer_seeds,
+            );
+
+            // It’s fine to transfer the full balance for a 0-space SystemAccount
+            transfer(cpi_ctx, leftover)?;
+        }
 
         Ok(())
     }
