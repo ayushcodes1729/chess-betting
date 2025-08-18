@@ -1,10 +1,7 @@
-Given your diagram, treasury is global and not tied to each match.
-So:
+# Chess Betting Application
 
-Create one global treasury PDA at program init.
+$$ All tests have been passed successfully.
+![Alt text](/home/ayush/Pictures/Screenshots/Screenshot From 2025-08-18 03-10-11.png)
+![Alt text](/home/ayush/Pictures/Screenshots/Screenshot From 2025-08-18 03-10-11.png)
+![Alt text](/home/ayush/Pictures/Screenshots/Screenshot From 2025-08-18 03-55-12.png)
 
-Store its bump in a Config account (not in Match).
-
-All matches will send leftover funds there.
-
-When you need to withdraw, run a withdraw_from_treasury instruction with you as signer and treasury PDA as source.
