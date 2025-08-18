@@ -12,7 +12,7 @@ capstone_chess_betting = "3fsvNChoZg4zdod2Tfw8ApdPhgShnmpJDrfe1GPweHdm"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

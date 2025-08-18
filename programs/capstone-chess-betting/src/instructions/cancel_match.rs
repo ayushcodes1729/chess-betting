@@ -22,7 +22,7 @@ pub struct CancelMatch<'info> {
 
     #[account(
         mut,
-        seeds = [b"match", match_account.seed.to_be_bytes().as_ref(), code.as_bytes(), match_account.player_a.key().as_ref()],
+        seeds = [b"match", match_account.seed.to_le_bytes().as_ref(), code.as_bytes(), match_account.player_a.key().as_ref()],
         bump = match_account.bump,
         close = treasury_pda
     )]
@@ -177,12 +177,29 @@ impl<'info> CancelMatch<'info> {
             }
         }
 
-        let vault_info = self.vault.to_account_info();
-        let treasury_info = self.treasury_pda.to_account_info();
+        // Sweep any leftover lamports from the vault to the treasury via CPI
+        let leftover = self.vault.lamports();
+        if leftover > 0 {
+            let transfer_accounts = Transfer {
+                from: self.vault.to_account_info(),
+                to: self.treasury_pda.to_account_info(),
+            };
 
-        let lamports_to_transfer = vault_info.lamports();
-        **vault_info.try_borrow_mut_lamports()? -= lamports_to_transfer;
-        **treasury_info.try_borrow_mut_lamports()? += lamports_to_transfer;
+            let signer_seeds: &[&[&[u8]]; 1] = &[&[
+                b"vault",
+                self.match_account.to_account_info().key.as_ref(),
+                &[self.match_account.vault_bump],
+            ]];
+
+            let cpi_ctx = CpiContext::new_with_signer(
+                self.system_program.to_account_info(),
+                transfer_accounts,
+                signer_seeds,
+            );
+
+            // It’s fine to transfer the full balance for a 0-space SystemAccount
+            transfer(cpi_ctx, leftover)?;
+        }
 
         Ok(())
     }
