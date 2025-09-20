@@ -5,8 +5,8 @@
 
 ## Deployed on devnet
 
-Program Id: HXxLCsgUmeyQPGYsDGXJDXcMbFbVA6gYiDpEZCQVMiZN
-Deployment Transaction Signature: 2H4PeRZxg6F7LEdscL51fee4GeGf19odBYbtKm98yQUckDc5uuYYr2JiEe73T3JhUPywsdmDS7y25p7LPvyFtJRX
+- Program Id: HXxLCsgUmeyQPGYsDGXJDXcMbFbVA6gYiDpEZCQVMiZN
+- Deployment Transaction Signature: 2H4PeRZxg6F7LEdscL51fee4GeGf19odBYbtKm98yQUckDc5uuYYr2JiEe73T3JhUPywsdmDS7y25p7LPvyFtJRX
 
 ![My Deployment](deployement.png)
 
